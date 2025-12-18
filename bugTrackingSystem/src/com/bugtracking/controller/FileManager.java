@@ -2,27 +2,32 @@ package com.bugtracking.controller;
 
 import com.bugtracking.model.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class FileManager {
+    //constants for files names handles users , bugs and notifications data
     private static final String USERS_FILE = "users.txt";
     private static final String BUGS_FILE = "bugs.txt";
+    private static final String NOTIFICATIONS_FILE = "notifications.txt";
 
-    // Initialize files if they don't exist
+
+    //constructor to create data .txt files
     public FileManager() {
         createFileIfNotExists(USERS_FILE);
         createFileIfNotExists(BUGS_FILE);
+        createFileIfNotExists(NOTIFICATIONS_FILE);
     }
 
+    //function createFileIfNotExists
     private void createFileIfNotExists(String fileName) {
         try {
             File file = new File(fileName);
             if (file.createNewFile()) {
                 System.out.println("Created file: " + fileName);
-                // Create a default admin if users file is new
+                // Create user with role admin after users file created
                 if (fileName.equals(USERS_FILE)) {
                     saveUser(new Admin("1", "admin", "admin123", "admin@sys.com"));
+                    //saveUser function implementation in line 43
                 }
             }
         } catch (IOException e) {
@@ -30,39 +35,52 @@ public class FileManager {
         }
     }
 
-    // READ USERS
-    public ArrayList<User> loadUsers() {
+    //function loadUsers to obtain users from a .txt file as objects
+    public ArrayList<User> loadUsers(){
         ArrayList<User> users = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(USERS_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
+        try {
+            Scanner scanner = new Scanner(new File(USERS_FILE));
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
                 String[] parts = line.split(";");
-                if (parts.length >= 5) {
-                    String role = parts[4];
-                    User u = null;
-                    // Factory Pattern logic
-                    switch (role) {
-                        case "ADMIN": u = new Admin(parts[0], parts[1], parts[2], parts[3]); break;
-                        case "TESTER": u = new Tester(parts[0], parts[1], parts[2], parts[3]); break; // Create Tester class
-                        case "DEV": u = new Developer(parts[0], parts[1], parts[2], parts[3]); break; // Create Developer class
-                        case "PM": u = new ProjectManager(parts[0], parts[1], parts[2], parts[3]); break; // Create PM class
-                    }
-                    if (u != null) users.add(u);
+                String role = parts[4];
+                User user = null;
+                // Factory Pattern logic
+                switch (role) {
+                    case "ADMIN":
+                        user = new Admin(parts[0], parts[1], parts[2], parts[3]);
+                        break;
+                    case "TESTER":
+                        user = new Tester(parts[0], parts[1], parts[2], parts[3]);
+                        break;
+                    case "DEV":
+                        user = new Developer(parts[0], parts[1], parts[2], parts[3]);
+                        break;
+                    case "PM":
+                        user = new ProjectManager(parts[0], parts[1], parts[2], parts[3]);
+                        break;
+                }
+                if (user != null){
+                    users.add(user);
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Error reading users: " + e.getMessage());
+            scanner.close();
+        }
+        catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
         return users;
     }
 
-    // WRITE USER (APPEND)
-    public void saveUser(User user) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USERS_FILE, true))) {
-            bw.write(user.toString());
-            bw.newLine();
-        } catch (IOException e) {
-            System.err.println("Error saving user: " + e.getMessage());
+    // function saveUser to save users in users.txt file
+    public void saveUser(User user){
+        try{
+            PrintWriter printWriter = new PrintWriter(new FileWriter(USERS_FILE, true));
+            printWriter.println(user.toString());
+            printWriter.close();
+        }
+        catch (IOException e){
+            System.out.println("Error saving user: " + e.getMessage());
         }
     }
 
@@ -82,13 +100,15 @@ public class FileManager {
 
     // UPDATE/DELETE LOGIC
     // Since it's a text file, we must read all, remove/edit, and write all back.
-    public void updateUserList(ArrayList<User> users) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USERS_FILE))) {
-            for (User u : users) {
-                bw.write(u.toString());
-                bw.newLine();
+    public void updateUserList(ArrayList<User> users){
+        try{
+            PrintWriter printWriter = new PrintWriter(new FileWriter(USERS_FILE));
+            for (int i = 0; i < users.size(); i++) {
+                printWriter.println(users.get(i).toString());
             }
-        } catch (IOException e) {
+            printWriter.close();
+        }
+        catch (IOException e){
             e.printStackTrace();
         }
     }
@@ -124,15 +144,18 @@ public class FileManager {
         }
     }
 
-    // 3. GET USERS BY ROLE (Helper for Dropdowns)
+    //getUserByRole function
     public ArrayList<User> getUsersByRole(String role) {
-        ArrayList<User> allUsers = loadUsers();
+        ArrayList<User> users = loadUsers();
         ArrayList<User> filtered = new ArrayList<>();
-        for(User u : allUsers) {
-            if(u.getRole().equalsIgnoreCase(role)) {
-                filtered.add(u);
+
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            if (user.getRole().equals(role)) {
+                filtered.add(user);
             }
         }
+
         return filtered;
     }
 
@@ -177,10 +200,8 @@ public class FileManager {
 
 
 
+    // find user by id
 
-    // ... (داخل الكلاس)
-
-    // 1. دالة تجيب الاسم عن طريق الـ ID (عشان الإشعارات والـ PM)
     public String getUsernameById(String id) {
         ArrayList<User> users = loadUsers();
         for (User u : users) {
@@ -191,19 +212,20 @@ public class FileManager {
         return "Unknown User (" + id + ")";
     }
 
-    // 2. دالة تعديل مستخدم (Admin Update)
-    public void updateUser(User updatedUser) {
+    //admin update function
+    public void updateUser(User updatedUser){
         ArrayList<User> users = loadUsers();
         for (int i = 0; i < users.size(); i++) {
             if (users.get(i).getId().equals(updatedUser.getId())) {
-                users.set(i, updatedUser); // استبدال القديم بالجديد
+                users.set(i, updatedUser);
                 break;
             }
         }
-        updateUserList(users); // إعادة كتابة الملف
+        updateUserList(users); //updateUserList function implementation in line 102
     }
 
-    // 3. دالة مسح كل الـ Bugs (تصفير النظام)
+
+    // clear bugs list
     public void deleteAllBugs() {
         try (PrintWriter writer = new PrintWriter("bugs.txt")) {
             writer.print(""); // مسح المحتوى
