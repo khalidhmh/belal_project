@@ -1,0 +1,9 @@
+3678;1;Welcome to the Bug Tracking System!;false
+4898;1;Welcome to the Bug Tracking System!;false
+1109;1;Welcome to the Bug Tracking System!;false
+9413;1;Welcome to the Bug Tracking System!;false
+9413;1109;New Bug Assigned: hkhk (BUG-9940);false
+1109;9413;Update on Bug BUG-9940: Status changed to Fixed;false
+4514;1;Welcome to the Bug Tracking System!;false
+9413;1109;New Bug Assigned: pppp (BUG-6775);false
+1109;9413;Update on Bug BUG-6775: Status changed to In Progress;false
